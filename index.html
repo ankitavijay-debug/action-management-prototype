@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Action Management — Cold-Start vs. Warm-Start</title>
+    <style>
+        :root{--b:#1b96ff;--bd:#0b5cab;--bbg:#eaf5ff;--g:#2e844a;--gbg:#e6f9ed;--o:#dd7a01;--obg:#fef4e4;--g50:#f7f9fb;--g100:#f4f6f9;--g200:#e5e5e5;--g300:#c9c7c5;--g400:#939393;--g500:#706e6b;--g700:#3e3e3c;--g900:#181818;--w:#fff;--rad:12px}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;background:var(--g50);color:var(--g900);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+        .hero{text-align:center;max-width:680px;margin-bottom:3rem}
+        .hero h1{font-size:2rem;font-weight:800;margin-bottom:.75rem}
+        .hero p{font-size:1rem;color:var(--g500);line-height:1.6}
+        .cards{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:780px;width:100%}
+        .card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);padding:2rem;cursor:pointer;transition:all .15s;text-decoration:none;color:inherit}
+        .card:hover{box-shadow:0 8px 32px rgba(0,0,0,.08);transform:translateY(-2px)}
+        .card-icon{font-size:2.5rem;margin-bottom:1rem}
+        .card h2{font-size:1.1rem;font-weight:700;margin-bottom:.5rem}
+        .card p{font-size:.82rem;color:var(--g500);line-height:1.5;margin-bottom:1rem}
+        .card-tag{display:inline-block;padding:.2rem .6rem;border-radius:20px;font-size:.65rem;font-weight:600}
+        .card.warm .card-tag{background:var(--gbg);color:var(--g)}
+        .card.cold .card-tag{background:var(--obg);color:var(--o)}
+        .card ul{list-style:none;margin-top:.75rem}
+        .card li{font-size:.72rem;color:var(--g500);padding:.2rem 0;padding-left:1rem;position:relative}
+        .card li::before{content:'';position:absolute;left:0;top:.55rem;width:5px;height:5px;border-radius:50%;background:var(--g300)}
+        .footer{margin-top:3rem;text-align:center;font-size:.7rem;color:var(--g400)}
+        .footer a{color:var(--b);text-decoration:none}
+        .diff-table{margin-top:2.5rem;width:100%;max-width:780px;background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden}
+        .diff-table h3{padding:1rem 1.25rem;font-size:.88rem;border-bottom:1px solid var(--g200)}
+        .diff-table table{width:100%;border-collapse:collapse;font-size:.72rem}
+        .diff-table th{text-align:left;padding:.6rem 1rem;background:var(--g100);color:var(--g500);font-weight:600;font-size:.65rem;text-transform:uppercase;letter-spacing:.3px}
+        .diff-table td{padding:.55rem 1rem;border-top:1px solid var(--g100);vertical-align:top}
+        .diff-table td:first-child{font-weight:600;color:var(--g700);width:22%}
+        .diff-table .warm-col{color:var(--g)}
+        .diff-table .cold-col{color:var(--o)}
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Action Management Prototype</h1>
+        <p>How the admin experience adapts based on whether the org has existing Service Cloud traffic (warm-start) or is configuring Agentforce for the first time (cold-start).</p>
+    </div>
+
+    <div class="cards">
+        <a class="card warm" href="warm-start.html">
+            <div class="card-icon">&#x1F525;</div>
+            <h2>Warm-Start</h2>
+            <span class="card-tag">Existing Service Cloud Customer</span>
+            <p>Org has 30+ days of case/chat data. Traffic patterns, resolution history, and query baselines exist.</p>
+            <ul>
+                <li>Traffic-driven recommendations</li>
+                <li>Real metrics with regression detection</li>
+                <li>Bulk import test cases from logs</li>
+                <li>Historical baseline comparison</li>
+            </ul>
+        </a>
+        <a class="card cold" href="cold-start.html">
+            <div class="card-icon">&#x2744;&#xFE0F;</div>
+            <h2>Cold-Start</h2>
+            <span class="card-tag">Net New Customer</span>
+            <p>No prior Service Cloud traffic. New to Salesforce or migrating from another platform.</p>
+            <ul>
+                <li>Industry starter packs</li>
+                <li>Guided first publish flow</li>
+                <li>Absolute thresholds (no baseline)</li>
+                <li>Transition nudges as data grows</li>
+            </ul>
+        </a>
+    </div>
+
+    <div class="diff-table">
+        <h3>Key Differences at a Glance</h3>
+        <table>
+            <thead>
+                <tr><th>Surface</th><th>Warm-Start (Existing)</th><th>Cold-Start (Net New)</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Recommendations</td>
+                    <td class="warm-col">"187 queries/mo hitting fallback — add Order Tracking"</td>
+                    <td class="cold-col">"Most Service orgs start with these 5 actions"</td>
+                </tr>
+                <tr>
+                    <td>Impact Numbers</td>
+                    <td class="warm-col">Real volume from traffic logs</td>
+                    <td class="cold-col">Industry benchmark estimates (labeled)</td>
+                </tr>
+                <tr>
+                    <td>Eval Datasets</td>
+                    <td class="warm-col">Traffic sample + saved test cases + overlap set</td>
+                    <td class="cold-col">Starter pack test cases + overlap set only</td>
+                </tr>
+                <tr>
+                    <td>Regression Delta</td>
+                    <td class="warm-col">Active from first publish (historical baseline)</td>
+                    <td class="cold-col">Activates after second publish (v1 → v2 only)</td>
+                </tr>
+                <tr>
+                    <td>Post-Publish</td>
+                    <td class="warm-col">Regression vs. baseline (24h monitoring)</td>
+                    <td class="cold-col">Absolute threshold monitoring only</td>
+                </tr>
+                <tr>
+                    <td>Test Cases</td>
+                    <td class="warm-col">Bulk import from production query logs</td>
+                    <td class="cold-col">15-25 pre-built industry starter templates</td>
+                </tr>
+                <tr>
+                    <td>LLM Judge</td>
+                    <td class="warm-col">Admin rates 50 real production responses</td>
+                    <td class="cold-col">Admin reviews 50 pre-scored synthetic examples</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Agentforce Self-Service &middot; Action Management + Eval Framework &middot; <a href="https://docs.google.com/document/d/1axe0Wh4U-rwfifyOmCAmXwzYTOLV8OOEVJRO_SAOUqY/edit">DPC</a></p>
+    </div>
+</body>
+</html>

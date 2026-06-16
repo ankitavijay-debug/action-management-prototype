@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cold-Start — Net New Customer</title>
+    <style>
+        :root{--b:#1b96ff;--bd:#0b5cab;--bbg:#eaf5ff;--bbr:#c8e2fc;--g:#2e844a;--gbg:#e6f9ed;--gbr:#a8ddb5;--o:#dd7a01;--obg:#fef4e4;--obr:#f5d49e;--r:#c23934;--rbg:#fef0ef;--g50:#f7f9fb;--g100:#f4f6f9;--g200:#e5e5e5;--g300:#c9c7c5;--g400:#939393;--g500:#706e6b;--g700:#3e3e3c;--g900:#181818;--w:#fff;--rad:12px;--pill:20px}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;background:var(--g50);color:var(--g900)}
+
+        .hdr{height:48px;background:var(--w);border-bottom:1px solid var(--g200);display:flex;align-items:center;padding:0 1.5rem;position:sticky;top:0;z-index:100}
+        .hdr svg{width:34px;height:26px;margin-right:1.25rem}
+        .hdr .nav{display:flex;gap:1.5rem;font-size:.84rem;font-weight:500}
+        .hdr .nav a{color:var(--g500);cursor:pointer;text-decoration:none}.hdr .nav a.on{color:var(--b);font-weight:600}
+        .hdr .badge{margin-left:auto;padding:.2rem .6rem;border-radius:var(--pill);font-size:.62rem;font-weight:600;background:var(--obg);color:var(--o)}
+        .hdr .switch-link{margin-left:.75rem;font-size:.7rem;color:var(--g400);text-decoration:none}
+        .hdr .switch-link:hover{color:var(--b)}
+
+        .page{max-width:1180px;margin:0 auto;padding:1.5rem 2rem}
+
+        .agent-bar{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}
+        .agent-av{width:44px;height:44px;background:linear-gradient(135deg,#6e4bf5,#1b96ff);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--w);font-size:1rem;font-weight:700}
+        .agent-info h1{font-size:1.15rem;font-weight:700}.agent-info p{font-size:.75rem;color:var(--g500)}
+
+        .progress-card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);padding:1rem 1.25rem;margin-bottom:1.25rem}
+        .progress-card h3{font-size:.82rem;font-weight:700;margin-bottom:.5rem}
+        .progress-bar{height:6px;background:var(--g200);border-radius:3px;overflow:hidden;margin-bottom:.4rem}
+        .progress-fill{height:100%;background:var(--b);border-radius:3px;transition:width .3s}
+        .progress-steps{display:flex;justify-content:space-between;font-size:.58rem;color:var(--g400)}
+        .progress-steps .done{color:var(--g);font-weight:600}
+        .progress-steps .current{color:var(--b);font-weight:600}
+
+        .kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-bottom:1.5rem}
+        .kpi{background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);padding:.85rem 1rem;position:relative;cursor:default;transition:box-shadow .15s}
+        .kpi:hover{box-shadow:0 4px 12px rgba(0,0,0,.05)}
+        .kpi-val{font-size:1.4rem;font-weight:800;color:var(--g400)}
+        .kpi-name{font-size:.68rem;font-weight:600;color:var(--g700);margin-top:.1rem}
+        .kpi-target{font-size:.56rem;color:var(--g400);margin-top:.1rem}
+        .kpi-empty{position:absolute;top:.55rem;right:.65rem;font-size:.5rem;font-weight:600;padding:.08rem .3rem;border-radius:3px;background:var(--obg);color:var(--o)}
+        .kpi-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--g900);color:var(--w);padding:.5rem .7rem;border-radius:8px;font-size:.65rem;line-height:1.4;width:220px;z-index:10;text-align:center}
+        .kpi-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--g900)}
+        .kpi:hover .kpi-tip{display:block}
+
+        .grid{display:grid;grid-template-columns:1fr 360px;gap:1.25rem}
+
+        .panel{background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden;margin-bottom:1.25rem}
+        .panel-hdr{padding:.85rem 1.25rem;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between}
+        .panel-hdr h2{font-size:.88rem;font-weight:700}.panel-hdr .meta{font-size:.65rem;color:var(--g400)}
+        .panel-body{padding:1rem 1.25rem}
+
+        .starter-banner{display:flex;align-items:center;gap:.7rem;padding:.7rem 1rem;background:var(--obg);border:1px solid var(--obr);border-radius:var(--rad);margin-bottom:1.25rem;cursor:pointer;transition:background .12s}
+        .starter-banner:hover{background:#fcecd3}
+        .starter-icon{font-size:1.1rem}.starter-text{flex:1}.starter-text strong{font-size:.76rem;display:block;color:var(--g700)}.starter-text span{font-size:.65rem;color:var(--g500)}
+        .starter-arr{color:var(--o);font-weight:700}
+
+        .industry-select{margin-bottom:1rem}
+        .industry-select label{font-size:.68rem;font-weight:600;color:var(--g700);display:block;margin-bottom:.3rem}
+        .industry-pills{display:flex;flex-wrap:wrap;gap:.3rem}
+        .ind-pill{padding:.3rem .7rem;border:1px solid var(--g200);border-radius:var(--pill);font-size:.68rem;cursor:pointer;transition:all .12s}
+        .ind-pill:hover{border-color:var(--b);color:var(--b)}
+        .ind-pill.active{background:var(--b);color:var(--w);border-color:var(--b)}
+
+        .topic{display:flex;align-items:center;gap:.65rem;padding:.6rem .7rem;border-radius:8px;margin-bottom:.25rem;cursor:pointer;transition:background .1s}
+        .topic:hover{background:var(--g100)}
+        .t-icon{width:30px;height:30px;background:var(--bbg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+        .t-info{flex:1}.t-name{font-size:.78rem;font-weight:600}.t-meta{font-size:.62rem;color:var(--g400)}
+        .t-dot{width:7px;height:7px;border-radius:50%}
+        .t-dot.draft{background:var(--o)}
+        .t-dot.active{background:var(--g)}
+        .t-badge{font-size:.55rem;padding:.1rem .35rem;border-radius:3px;background:var(--obg);color:var(--o);font-weight:600}
+
+        .add-btn{display:flex;align-items:center;gap:.4rem;padding:.55rem .7rem;border:1px dashed var(--g300);border-radius:8px;font-size:.72rem;color:var(--g500);cursor:pointer;margin-top:.5rem}
+        .add-btn:hover{border-color:var(--b);color:var(--b);background:var(--bbg)}
+
+        .chat{border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden;display:flex;flex-direction:column;height:280px}
+        .chat-bar{padding:.35rem .75rem;background:var(--obg);font-size:.58rem;color:var(--o);font-weight:500;display:flex;gap:.6rem;border-bottom:1px solid var(--obr)}
+        .chat-body{flex:1;overflow-y:auto;padding:.65rem .75rem}
+        .cm{margin-bottom:.4rem;max-width:80%}.cm.u{margin-left:auto}.cm.b{margin-right:auto}
+        .cb{padding:.4rem .6rem;border-radius:12px;font-size:.72rem;line-height:1.4}
+        .u .cb{background:var(--b);color:var(--w);border-bottom-right-radius:3px}
+        .b .cb{background:var(--g100);border-bottom-left-radius:3px}
+        .chat-diag{margin-top:.15rem;font-size:.56rem;color:var(--g400);padding:.15rem .4rem;background:#fffde8;border:1px solid #f0e68c;border-radius:3px;display:inline-block}
+        .chat-in{padding:.4rem .6rem;border-top:1px solid var(--g200);display:flex;gap:.3rem}
+        .chat-in input{flex:1;border:1px solid var(--g200);border-radius:var(--pill);padding:.35rem .7rem;font-size:.72rem}
+        .chat-in input:focus{outline:none;border-color:var(--b)}
+        .chips{padding:.3rem .75rem .5rem;display:flex;flex-wrap:wrap;gap:.2rem}
+        .chip{padding:.18rem .45rem;border:1px solid var(--g200);border-radius:var(--pill);font-size:.6rem;color:var(--g500);cursor:pointer;background:var(--w)}
+        .chip:hover{border-color:var(--b);color:var(--b)}
+
+        .eval-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+        .eval-status{display:flex;align-items:center;gap:.35rem;font-size:.7rem;font-weight:600;color:var(--o)}
+        .eval-dot{width:7px;height:7px;border-radius:50%;background:var(--o)}
+        .eval-row{display:flex;justify-content:space-between;padding:.25rem 0;font-size:.68rem;border-bottom:1px solid var(--g100)}
+        .eval-row:last-child{border-bottom:none}
+        .eval-row .er-name{color:var(--g500)}.eval-row .er-val{font-weight:600}.eval-row .er-val.pass{color:var(--g)}.eval-row .er-val.na{color:var(--g400);font-style:italic}
+        .eval-foot{margin-top:.5rem;font-size:.58rem;color:var(--g400);display:flex;justify-content:space-between}
+
+        .drawer-bg{position:fixed;inset:0;background:rgba(0,0,0,.15);z-index:199;display:none}
+        .drawer-bg.open{display:block}
+        .drawer{position:fixed;top:0;right:0;width:420px;height:100vh;background:var(--w);box-shadow:-4px 0 24px rgba(0,0,0,.08);z-index:200;transform:translateX(100%);transition:transform .25s ease;overflow-y:auto;padding:1.5rem}
+        .drawer.open{transform:translateX(0)}
+        .drawer h2{font-size:1.05rem;font-weight:700;margin-bottom:.2rem}
+        .drawer .dsub{font-size:.78rem;color:var(--g500);margin-bottom:1.25rem;line-height:1.4}
+        .drawer .dlabel{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--g400);margin-top:1.1rem;margin-bottom:.3rem}
+        .drawer .dqueries{display:flex;flex-wrap:wrap;gap:.2rem;margin-bottom:.5rem}
+        .drawer .dqueries span{padding:.18rem .45rem;background:var(--g100);border-radius:var(--pill);font-size:.65rem}
+        .drawer .dstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem}
+        .drawer .dstat{background:var(--g100);border-radius:8px;padding:.5rem;text-align:center}
+        .drawer .dstat .dv{font-size:.9rem;font-weight:700}.drawer .dstat .dv.pos{color:var(--g)}.drawer .dstat .dv.est{color:var(--o)}
+        .drawer .dstat .dl{font-size:.52rem;color:var(--g500);text-transform:uppercase}
+        .drawer .dperms{font-size:.7rem;color:var(--g500);margin-top:.3rem}
+        .drawer .dval{border-radius:8px;padding:.6rem .8rem;font-size:.72rem;margin-top:1rem}
+        .drawer .dval.ok{background:var(--gbg);border:1px solid var(--gbr)}
+        .drawer .dval.run{background:var(--bbg);border:1px solid var(--bbr)}
+        .drawer .dactions{display:flex;gap:.5rem;margin-top:1.25rem}
+        .drawer .close{position:absolute;top:1rem;right:1rem;font-size:1rem;color:var(--g400);cursor:pointer}
+
+        .btn{display:inline-flex;align-items:center;padding:.4rem .9rem;border-radius:var(--pill);font-size:.72rem;font-weight:600;cursor:pointer;border:none;transition:all .12s}
+        .btn-sm{padding:.25rem .6rem;font-size:.62rem}
+        .btn-b{background:var(--b);color:var(--w)}.btn-b:hover{background:var(--bd)}
+        .btn-o{background:var(--w);color:var(--g700);border:1px solid var(--g200)}.btn-o:hover{background:var(--g100)}
+
+        .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);box-shadow:0 8px 32px rgba(0,0,0,.1);padding:1rem;width:340px;display:none;z-index:300;animation:slideUp .3s ease}
+        .toast.show{display:block}
+        @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .toast h4{font-size:.76rem;font-weight:700;margin-bottom:.2rem}
+        .toast p{font-size:.68rem;color:var(--g500);line-height:1.4}
+        .toast .tb{margin-top:.4rem;display:flex;gap:.3rem}
+
+        .callout{background:var(--obg);border:1px solid var(--obr);border-radius:8px;padding:.5rem .75rem;margin-bottom:1rem;font-size:.68rem;color:var(--o);display:flex;align-items:center;gap:.5rem}
+        .callout strong{font-weight:700}
+
+        .transition-card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);padding:.75rem 1rem;margin-bottom:1rem}
+        .transition-card h4{font-size:.72rem;font-weight:700;margin-bottom:.4rem;color:var(--g700)}
+        .transition-row{display:flex;align-items:center;justify-content:space-between;padding:.2rem 0;font-size:.62rem}
+        .transition-row .tr-label{color:var(--g500)}.transition-row .tr-val{font-weight:600}
+        .transition-row .tr-val.locked{color:var(--g400)}.transition-row .tr-val.unlocked{color:var(--g)}
+        .transition-bar{height:4px;background:var(--g200);border-radius:2px;margin-top:.15rem;margin-bottom:.3rem;overflow:hidden}
+        .transition-bar .fill{height:100%;background:var(--o);border-radius:2px}
+
+        .publish-checklist{margin-top:.5rem}
+        .check-item{display:flex;align-items:center;gap:.4rem;padding:.25rem 0;font-size:.68rem}
+        .check-item .ci-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.55rem;flex-shrink:0}
+        .check-item .ci-icon.done{background:var(--gbg);color:var(--g)}
+        .check-item .ci-icon.pending{background:var(--obg);color:var(--o)}
+        .check-item .ci-icon.skip{background:var(--g100);color:var(--g400)}
+    </style>
+</head>
+<body>
+    <div class="hdr">
+        <svg viewBox="0 0 48 36"><path d="M40.5 14.5c-.3-6.5-5.6-11.5-12-11.5-4.5 0-8.5 2.5-10.5 6.2C16.8 8.4 15.2 8 13.5 8 8.8 8 5 11.8 5 16.5c0 .5 0 1 .1 1.5C2.2 19.2 0 22.2 0 25.5 0 30.2 3.8 34 8.5 34h29c5.2 0 9.5-4.3 9.5-9.5 0-4.8-3.6-8.8-8.5-10z" fill="#00A1E0"/></svg>
+        <div class="nav"><a class="on" href="#">Help Agent</a></div>
+        <span class="badge">COLD-START: Net New Customer</span>
+        <a class="switch-link" href="warm-start.html">Switch to Warm-Start view &rarr;</a>
+    </div>
+
+    <div class="page">
+        <div class="callout">
+            <strong>&#x2744;&#xFE0F; Getting started:</strong> No traffic data yet. Recommendations and metrics are based on industry benchmarks until your agent processes ~500 queries.
+        </div>
+
+        <div class="agent-bar">
+            <div class="agent-av">H</div>
+            <div class="agent-info"><h1>Help Agent</h1><p>Draft &middot; Not yet published &middot; First-time setup</p></div>
+        </div>
+
+        <!-- Maturity Progress -->
+        <div class="progress-card">
+            <h3>Setup Progress &mdash; 2 of 5 steps complete</h3>
+            <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
+            <div class="progress-steps">
+                <span class="done">&#x2713; Industry</span>
+                <span class="done">&#x2713; Starter Pack</span>
+                <span class="current">&#x25CF; Add Topics</span>
+                <span>Test</span>
+                <span>Publish</span>
+            </div>
+        </div>
+
+        <!-- KPI Strip (empty state) -->
+        <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-empty">No data</div><div class="kpi-val">&mdash;</div><div class="kpi-name">Routing Accuracy</div><div class="kpi-target">threshold: 95% (industry standard)</div><div class="kpi-tip">Will populate after first publish + 500 queries. Using absolute threshold, not relative baseline.</div></div>
+            <div class="kpi"><div class="kpi-empty">No data</div><div class="kpi-val">&mdash;</div><div class="kpi-name">Self-Service Rate</div><div class="kpi-target">threshold: 80% (industry standard)</div><div class="kpi-tip">No historical comparison available. Target based on industry benchmark for Retail orgs.</div></div>
+            <div class="kpi"><div class="kpi-empty">No data</div><div class="kpi-val">&mdash;</div><div class="kpi-name">Response Quality</div><div class="kpi-target">threshold: 4.0+ (synthetic calibration)</div><div class="kpi-tip">LLM judge calibrated from pre-scored Retail examples. Will re-calibrate once you have real conversations.</div></div>
+            <div class="kpi"><div class="kpi-empty">No data</div><div class="kpi-val">&mdash;</div><div class="kpi-name">Input Extraction</div><div class="kpi-target">threshold: 90%</div><div class="kpi-tip">Measured against starter pack test cases only.</div></div>
+            <div class="kpi"><div class="kpi-empty">No data</div><div class="kpi-val">&mdash;</div><div class="kpi-name">Response Time</div><div class="kpi-target">threshold: &lt;3s</div><div class="kpi-tip">Measurable from first preview test. Only metric available immediately.</div></div>
+        </div>
+
+        <div class="grid">
+            <div>
+                <!-- Industry Starter Pack Banner -->
+                <div class="starter-banner" onclick="openDrawer('starter')">
+                    <span class="starter-icon">&#x1F3AF;</span>
+                    <div class="starter-text"><strong>Retail Starter Pack loaded</strong><span>5 recommended topics + 18 test cases for Retail orgs &middot; Customize or replace anytime</span></div>
+                    <span class="starter-arr">&#x2192;</span>
+                </div>
+
+                <!-- Industry Selection -->
+                <div class="industry-select">
+                    <label>Your industry (drives recommendations)</label>
+                    <div class="industry-pills">
+                        <span class="ind-pill active">Retail</span>
+                        <span class="ind-pill" onclick="this.parentElement.querySelector('.active').classList.remove('active');this.classList.add('active')">Financial Services</span>
+                        <span class="ind-pill" onclick="this.parentElement.querySelector('.active').classList.remove('active');this.classList.add('active')">Healthcare</span>
+                        <span class="ind-pill" onclick="this.parentElement.querySelector('.active').classList.remove('active');this.classList.add('active')">Technology</span>
+                        <span class="ind-pill" onclick="this.parentElement.querySelector('.active').classList.remove('active');this.classList.add('active')">General</span>
+                    </div>
+                </div>
+
+                <!-- Topics -->
+                <div class="panel">
+                    <div class="panel-hdr"><h2>Topics</h2><span class="meta" id="tCount">3 added (from starter pack)</span></div>
+                    <div class="panel-body">
+                        <div id="tList"></div>
+                        <div class="add-btn" onclick="openDrawer(null)"><span>+</span> Add a topic</div>
+                    </div>
+                </div>
+
+                <!-- Transition to Warm-Start -->
+                <div class="transition-card">
+                    <h4>&#x1F4C8; Unlocking Full Eval Features</h4>
+                    <div class="transition-row"><span class="tr-label">Traffic-driven recommendations</span><span class="tr-val locked">&#x1F512; Need 500 queries</span></div>
+                    <div class="transition-bar"><div class="fill" style="width:0%"></div></div>
+                    <div class="transition-row"><span class="tr-label">Regression delta metric</span><span class="tr-val locked">&#x1F512; Need 2nd publish</span></div>
+                    <div class="transition-bar"><div class="fill" style="width:0%"></div></div>
+                    <div class="transition-row"><span class="tr-label">Weekly eval analysis</span><span class="tr-val locked">&#x1F512; Need 30 days live</span></div>
+                    <div class="transition-bar"><div class="fill" style="width:0%"></div></div>
+                    <div class="transition-row"><span class="tr-label">Real-data calibration</span><span class="tr-val locked">&#x1F512; Need 50 rated responses</span></div>
+                    <div class="transition-bar"><div class="fill" style="width:0%"></div></div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div>
+                <!-- Preview Agent -->
+                <div class="panel">
+                    <div class="panel-hdr"><h2>Preview Agent</h2><span class="meta">Test before publish</span></div>
+                    <div class="panel-body" style="padding:0">
+                        <div class="chat">
+                            <div class="chat-bar"><span>Config: Draft only</span><span>No live traffic yet</span></div>
+                            <div class="chat-body" id="chatBody"><div class="cm b"><div class="cb">Hi! How can I help?</div></div></div>
+                            <div class="chips"><span class="chip" onclick="tryC(this)">Where is my order?</span><span class="chip" onclick="tryC(this)">I want to return this</span><span class="chip" onclick="tryC(this)">What's your return policy?</span></div>
+                            <div class="chat-in"><input id="chatIn" placeholder="Type as customer..." onkeydown="if(event.key==='Enter')send()"><button class="btn btn-b btn-sm" onclick="send()">&#x2191;</button></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Eval Status (limited) -->
+                <div class="panel">
+                    <div class="panel-hdr"><h2>Eval Status</h2><button class="btn btn-sm btn-o" onclick="runEval()">Run Now</button></div>
+                    <div class="panel-body">
+                        <div class="eval-hdr">
+                            <div class="eval-status"><div class="eval-dot"></div> Limited (starter pack only)</div>
+                            <span style="font-size:.6rem;color:var(--g400)">18 starter test cases</span>
+                        </div>
+                        <div class="eval-row"><span class="er-name">Routing Accuracy</span><span class="er-val pass">94% &#x2713;</span></div>
+                        <div class="eval-row"><span class="er-name">Self-Service Rate</span><span class="er-val na">N/A &mdash; need live traffic</span></div>
+                        <div class="eval-row"><span class="er-name">Response Quality</span><span class="er-val pass">4.1 &#x2713; (synthetic judge)</span></div>
+                        <div class="eval-row"><span class="er-name">Input Extraction</span><span class="er-val pass">91% &#x2713;</span></div>
+                        <div class="eval-row"><span class="er-name">Response Time</span><span class="er-val pass">1.6s &#x2713;</span></div>
+                        <div class="eval-row"><span class="er-name">Regression Delta</span><span class="er-val na">N/A &mdash; no previous version</span></div>
+                        <div class="eval-foot"><span>Dataset: starter pack only</span><span>No traffic sample available</span></div>
+                    </div>
+                </div>
+
+                <!-- Test Cases -->
+                <div class="panel">
+                    <div class="panel-hdr"><h2>Test Cases</h2><span class="meta">18 from starter</span></div>
+                    <div class="panel-body">
+                        <div style="font-size:.68rem;color:var(--g500);margin-bottom:.5rem">Sources:</div>
+                        <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.5rem">
+                            <span style="padding:.15rem .4rem;background:var(--obg);border-radius:var(--pill);font-size:.6rem;color:var(--o)">18 from Retail starter pack</span>
+                            <span style="padding:.15rem .4rem;background:var(--g100);border-radius:var(--pill);font-size:.6rem;color:var(--g400)">0 from traffic (none yet)</span>
+                        </div>
+                        <div style="font-size:.62rem;color:var(--g400);margin-bottom:.5rem;font-style:italic">Tip: Save test cases from the preview panel to build your eval set</div>
+                        <button class="btn btn-sm btn-o" style="opacity:.5;cursor:not-allowed" title="No production logs available yet">Import from Logs</button>
+                    </div>
+                </div>
+
+                <!-- Guided Publish -->
+                <div class="panel">
+                    <div class="panel-hdr"><h2>Ready to Publish?</h2></div>
+                    <div class="panel-body">
+                        <div style="font-size:.7rem;color:var(--g500);margin-bottom:.5rem">First-publish checklist (simplified):</div>
+                        <div class="publish-checklist">
+                            <div class="check-item"><span class="ci-icon done">&#x2713;</span><span>Topics configured (3)</span></div>
+                            <div class="check-item"><span class="ci-icon done">&#x2713;</span><span>Permissions granted</span></div>
+                            <div class="check-item"><span class="ci-icon pending">!</span><span>5+ test cases saved (have 18 &#x2713;)</span></div>
+                            <div class="check-item"><span class="ci-icon skip">&mdash;</span><span style="color:var(--g400)">Regression check (skipped &mdash; first version)</span></div>
+                            <div class="check-item"><span class="ci-icon skip">&mdash;</span><span style="color:var(--g400)">Traffic baseline (N/A for first publish)</span></div>
+                        </div>
+                        <button class="btn btn-b" style="margin-top:.75rem;width:100%;justify-content:center" onclick="showPublishToast()">Publish Agent</button>
+                        <div style="font-size:.58rem;color:var(--g400);margin-top:.4rem;text-align:center">After publishing, we'll check in with your first performance report once 500 queries are processed.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drawer -->
+    <div class="drawer-bg" id="dbg" onclick="closeDrawer()"></div>
+    <div class="drawer" id="drawer"><span class="close" onclick="closeDrawer()">&#x2715;</span><div id="dContent"></div></div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+    let topics=[
+        {id:'faq',icon:'&#x1F4AC;',name:'General Questions',est:'~150-250/mo',starter:true},
+        {id:'returns',icon:'&#x21A9;&#xFE0F;',name:'Returns & Refunds',est:'~100-180/mo',starter:true},
+        {id:'orders',icon:'&#x1F4E6;',name:'Order Tracking',est:'~120-200/mo',starter:true},
+    ];
+
+    const avail={
+        cancel:{icon:'&#x1F6AB;',name:'Order Cancellation',what:'Cancels orders that haven\'t shipped yet.',handles:['"Cancel my order"','"I changed my mind"','"Stop my shipment"'],est:{q:'~50-100/mo',r:'70-85%',e:'~5-10%'},perms:'Orders (read/write).'},
+        exchange:{icon:'&#x1F504;',name:'Exchanges',what:'Helps swap items for different size/color.',handles:['"Can I exchange this?"','"Wrong size"','"Need different color"'],est:{q:'~60-120/mo',r:'65-80%',e:'~6-12%'},perms:'Orders (read/write). Products (read).'},
+        billing:{icon:'&#x1F4B3;',name:'Billing Questions',what:'Looks up invoices, explains charges.',handles:['"Why was I charged?"','"Update payment"','"Don\'t recognize this"'],est:{q:'~30-80/mo',r:'60-75%',e:'~3-8%'},perms:'Payments, Invoices (read).'},
+    };
+
+    function renderTopics(){
+        document.getElementById('tCount').textContent=topics.length+' added'+(topics.some(t=>t.starter)?' (from starter pack)':'');
+        document.getElementById('tList').innerHTML=topics.map(t=>`
+            <div class="topic" onclick="openDrawer('${t.id}')">
+                <div class="t-icon">${t.icon}</div>
+                <div class="t-info"><div class="t-name">${t.name}</div><div class="t-meta">${t.est||'~estimate'} (industry benchmark)</div></div>
+                ${t.starter?'<span class="t-badge">STARTER</span>':''}
+                <div class="t-dot draft"></div>
+            </div>`).join('');
+    }
+
+    function openDrawer(id){
+        const d=document.getElementById('drawer'),bg=document.getElementById('dbg'),c=document.getElementById('dContent');
+        if(id==='starter'){
+            c.innerHTML=`<h2>&#x1F3AF; Retail Starter Pack</h2><div class="dsub">Pre-configured topics and test cases for Retail organizations. Based on patterns from thousands of retail service orgs.</div>
+                <div class="dlabel">Included Topics (5)</div>
+                <div style="font-size:.7rem;color:var(--g500);line-height:1.8">&#x2713; General Questions<br>&#x2713; Returns & Refunds<br>&#x2713; Order Tracking<br>&#x2713; Order Cancellation<br>&#x2713; Exchanges</div>
+                <div class="dlabel">Included Test Cases (18)</div>
+                <div style="font-size:.68rem;color:var(--g500);line-height:1.6">Sample queries covering common retail scenarios. Each includes expected action and resolution path.<br><br><em>Replace with your own queries as real traffic flows in.</em></div>
+                <div class="dlabel">Estimates (industry benchmarks)</div>
+                <div class="dstats"><div class="dstat"><div class="dv est">~500-900</div><div class="dl">queries/mo (est.)</div></div><div class="dstat"><div class="dv est">70-85%</div><div class="dl">resolve (est.)</div></div><div class="dstat"><div class="dv est">~15-25%</div><div class="dl">escalation reduction</div></div></div>
+                <div style="font-size:.55rem;color:var(--g400);margin-top:.4rem">Source: Industry benchmarks for Retail orgs of similar size. Actual numbers will vary.</div>`;
+        } else if(id&&avail[id]){
+            const t=avail[id];
+            c.innerHTML=`<h2>${t.icon} ${t.name}</h2><div class="dsub">${t.what}</div>
+                <div class="dlabel">Questions this handles (typical for Retail)</div><div class="dqueries">${t.handles.map(h=>`<span>${h}</span>`).join('')}</div>
+                <div class="dlabel">Estimated impact (industry benchmark)</div><div class="dstats"><div class="dstat"><div class="dv est">${t.est.q}</div><div class="dl">queries/mo (est.)</div></div><div class="dstat"><div class="dv est">${t.est.r}</div><div class="dl">resolve (est.)</div></div><div class="dstat"><div class="dv est">${t.est.e}</div><div class="dl">escalation reduction</div></div></div>
+                <div style="font-size:.55rem;color:var(--g400);margin-top:.4rem">Source: Industry benchmarks. Your actual volume will vary.</div>
+                <div class="dlabel">Data access</div><div class="dperms">${t.perms}</div>
+                <div class="dval run" id="dVal">Running eval against 18 starter test cases...</div>
+                <div class="dactions"><button class="btn btn-b" onclick="addTopic('${id}')">Add this topic</button><button class="btn btn-o" onclick="closeDrawer()">Test first</button></div>`;
+            setTimeout(()=>{const v=document.getElementById('dVal');if(v){v.className='dval ok';v.innerHTML='&#x2705; <strong>17/18 passed.</strong> No conflicts with existing topics. Routing at 94%.';}},1500);
+        } else if(id&&topics.find(t=>t.id===id)){
+            const t=topics.find(x=>x.id===id);
+            c.innerHTML=`<h2>${t.icon} ${t.name}</h2><div class="dsub">Draft &middot; ${t.est} (industry estimate)${t.starter?' &middot; From starter pack':''}</div>
+                <div class="dlabel">Status</div><div style="font-size:.7rem;color:var(--o);font-weight:600">Draft &mdash; will go live on first publish</div>
+                <div class="dactions" style="margin-top:1rem"><button class="btn btn-o">Test</button><button class="btn" style="color:var(--r);background:none;font-size:.65rem" onclick="removeTopic('${id}')">Remove</button></div>`;
+        } else {
+            c.innerHTML=`<h2>Add a Topic</h2><div class="dsub">Suggested for Retail organizations based on industry patterns.</div>
+                ${Object.entries(avail).filter(([k])=>!topics.find(t=>t.id===k)).map(([k,t])=>`<div class="starter-banner" onclick="openDrawer('${k}')" style="margin-bottom:.6rem"><span class="starter-icon">${t.icon}</span><div class="starter-text"><strong>${t.name}</strong><span>${t.handles[0]} &middot; ${t.est.q} (estimated)</span></div><span class="starter-arr">&#x2192;</span></div>`).join('')}`;
+        }
+        d.classList.add('open');bg.classList.add('open');
+    }
+
+    function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('dbg').classList.remove('open');}
+    function addTopic(id){const t=avail[id];topics.push({id,icon:t.icon,name:t.name,est:t.est.q,starter:false});renderTopics();closeDrawer();showToast('&#x2705; <strong>'+t.name+' added.</strong> 17/18 starter tests passing. Save more test cases from preview to improve confidence.');}
+    function removeTopic(id){topics=topics.filter(t=>t.id!==id);renderTopics();closeDrawer();}
+
+    function send(){
+        const inp=document.getElementById('chatIn');if(!inp.value.trim())return;
+        const msg=inp.value;inp.value='';
+        const bd=document.getElementById('chatBody');
+        bd.innerHTML+=`<div class="cm u"><div class="cb">${msg}</div></div>`;
+        setTimeout(()=>{
+            let topic='General Questions',runner='Article Search',resp='Let me help with that...';
+            const l=msg.toLowerCase();
+            if(l.match(/order|track|ship|package/)){topic='Order Tracking';runner='General Questions';resp="What's your order number?";}
+            else if(l.match(/return|refund/)){topic='Returns & Refunds';runner='Exchanges';resp="What's your order number? I'll check if it's eligible.";}
+            else if(l.match(/cancel/)){topic='Order Cancellation';runner='General Questions';resp="What's the order number?";}
+            else if(l.match(/exchange|size|swap/)){topic='Exchanges';runner='Returns & Refunds';resp="What size would you prefer?";}
+            bd.innerHTML+=`<div class="cm b"><div class="cb">${resp}</div><div class="chat-diag">${topic} &middot; runner-up: ${runner} &middot; 1.1s &middot; <a href="#" onclick="event.preventDefault();saveTestCase('${msg.replace(/'/g,"\\'")}','${topic}')">save as test case</a></div></div>`;
+            bd.scrollTop=bd.scrollHeight;
+        },600);
+    }
+
+    function saveTestCase(q,t){showToast('&#x1F4BE; Test case saved: "'+q+'" &rarr; '+t+'. You now have 19 test cases.');}
+    function tryC(el){document.getElementById('chatIn').value=el.textContent;send();}
+    function runEval(){const b=event.target;b.textContent='Running...';b.disabled=true;setTimeout(()=>{b.textContent='Run Now';b.disabled=false;},1500);}
+    function showToast(html){const t=document.getElementById('toast');t.innerHTML=`<h4>${html}</h4><div class="tb"><button class="btn btn-sm btn-o" onclick="document.getElementById('toast').classList.remove('show')">Dismiss</button></div>`;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),5000);}
+    function showPublishToast(){showToast('&#x1F680; <strong>Agent published!</strong> We\'ll check in with your first performance report once 500 queries are processed. Monitoring with absolute thresholds until then.');}
+
+    renderTopics();
+    </script>
+</body>
+</html>
