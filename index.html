@@ -3,119 +3,599 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Action Management — Cold-Start vs. Warm-Start</title>
+    <title>Help Agent — Actions + Eval</title>
     <style>
-        :root{--b:#1b96ff;--bd:#0b5cab;--bbg:#eaf5ff;--g:#2e844a;--gbg:#e6f9ed;--o:#dd7a01;--obg:#fef4e4;--g50:#f7f9fb;--g100:#f4f6f9;--g200:#e5e5e5;--g300:#c9c7c5;--g400:#939393;--g500:#706e6b;--g700:#3e3e3c;--g900:#181818;--w:#fff;--rad:12px}
+        :root{--b:#1b96ff;--bd:#0b5cab;--bbg:#eaf5ff;--bbr:#c8e2fc;--g:#2e844a;--gbg:#e6f9ed;--gbr:#a8ddb5;--o:#dd7a01;--obg:#fef4e4;--obr:#f5d49e;--r:#c23934;--rbg:#fef0ef;--g50:#f7f9fb;--g100:#f4f6f9;--g200:#e5e5e5;--g300:#c9c7c5;--g400:#939393;--g500:#706e6b;--g700:#3e3e3c;--g900:#181818;--w:#fff;--rad:12px;--pill:20px}
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;background:var(--g50);color:var(--g900);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
-        .hero{text-align:center;max-width:680px;margin-bottom:3rem}
-        .hero h1{font-size:2rem;font-weight:800;margin-bottom:.75rem}
-        .hero p{font-size:1rem;color:var(--g500);line-height:1.6}
-        .cards{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:780px;width:100%}
-        .card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);padding:2rem;cursor:pointer;transition:all .15s;text-decoration:none;color:inherit}
-        .card:hover{box-shadow:0 8px 32px rgba(0,0,0,.08);transform:translateY(-2px)}
-        .card-icon{font-size:2.5rem;margin-bottom:1rem}
-        .card h2{font-size:1.1rem;font-weight:700;margin-bottom:.5rem}
-        .card p{font-size:.82rem;color:var(--g500);line-height:1.5;margin-bottom:1rem}
-        .card-tag{display:inline-block;padding:.2rem .6rem;border-radius:20px;font-size:.65rem;font-weight:600}
-        .card.warm .card-tag{background:var(--gbg);color:var(--g)}
-        .card.cold .card-tag{background:var(--obg);color:var(--o)}
-        .card ul{list-style:none;margin-top:.75rem}
-        .card li{font-size:.72rem;color:var(--g500);padding:.2rem 0;padding-left:1rem;position:relative}
-        .card li::before{content:'';position:absolute;left:0;top:.55rem;width:5px;height:5px;border-radius:50%;background:var(--g300)}
-        .footer{margin-top:3rem;text-align:center;font-size:.7rem;color:var(--g400)}
-        .footer a{color:var(--b);text-decoration:none}
-        .diff-table{margin-top:2.5rem;width:100%;max-width:780px;background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden}
-        .diff-table h3{padding:1rem 1.25rem;font-size:.88rem;border-bottom:1px solid var(--g200)}
-        .diff-table table{width:100%;border-collapse:collapse;font-size:.72rem}
-        .diff-table th{text-align:left;padding:.6rem 1rem;background:var(--g100);color:var(--g500);font-weight:600;font-size:.65rem;text-transform:uppercase;letter-spacing:.3px}
-        .diff-table td{padding:.55rem 1rem;border-top:1px solid var(--g100);vertical-align:top}
-        .diff-table td:first-child{font-weight:600;color:var(--g700);width:22%}
-        .diff-table .warm-col{color:var(--g)}
-        .diff-table .cold-col{color:var(--o)}
+        body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;background:var(--g50);color:var(--g900)}
+
+        /* Header */
+        .hdr{height:52px;background:var(--w);border-bottom:1px solid var(--g200);display:flex;align-items:center;padding:0 1.5rem;position:sticky;top:0;z-index:100}
+        .hdr svg{width:34px;height:26px;margin-right:1rem}
+        .hdr-title{font-size:.88rem;font-weight:700;color:var(--g900)}
+        .hdr-sub{font-size:.68rem;color:var(--g400);margin-left:.5rem}
+        .hdr-right{margin-left:auto;display:flex;align-items:center;gap:.75rem}
+
+        .page{max-width:1200px;margin:0 auto;padding:1.5rem 2rem}
+
+        /* Agent Header */
+        .agent-bar{display:flex;align-items:center;gap:1rem;margin-bottom:1.75rem;padding-bottom:1.25rem;border-bottom:1px solid var(--g200)}
+        .agent-av{width:48px;height:48px;background:linear-gradient(135deg,#6e4bf5,#1b96ff);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--w);font-size:1.1rem;font-weight:700}
+        .agent-info h1{font-size:1.2rem;font-weight:700}.agent-info p{font-size:.75rem;color:var(--g500)}
+        .agent-status{margin-left:auto;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:var(--g);font-weight:600}
+        .agent-status::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--g)}
+
+        /* Steps Nav */
+        .steps{display:flex;gap:0;margin-bottom:1.75rem;border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden;background:var(--w)}
+        .step{flex:1;padding:.7rem 1rem;font-size:.72rem;font-weight:600;color:var(--g400);text-align:center;cursor:pointer;border-right:1px solid var(--g200);transition:all .12s}
+        .step:last-child{border-right:none}
+        .step:hover{background:var(--g100)}
+        .step.active{background:var(--bbg);color:var(--bd)}
+        .step.done{color:var(--g)}
+        .step .step-num{display:block;font-size:.55rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.1rem;font-weight:500}
+
+        /* Main Layout */
+        .main-grid{display:grid;grid-template-columns:1fr 380px;gap:1.5rem}
+
+        /* Panel */
+        .panel{background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden;margin-bottom:1.25rem}
+        .panel-hdr{padding:.85rem 1.25rem;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between}
+        .panel-hdr h2{font-size:.88rem;font-weight:700}.panel-hdr .meta{font-size:.65rem;color:var(--g400)}
+        .panel-body{padding:1rem 1.25rem}
+
+        /* Actions List */
+        .action-item{display:flex;align-items:center;gap:.7rem;padding:.65rem .8rem;border-radius:8px;margin-bottom:.3rem;transition:background .1s;border:1px solid transparent}
+        .action-item:hover{background:var(--g100)}
+        .action-item.highlight{border:1px solid var(--bbr);background:var(--bbg);animation:fadeHighlight 3s forwards}
+        @keyframes fadeHighlight{0%{background:var(--bbg);border-color:var(--bbr)}100%{background:var(--w);border-color:transparent}}
+        .a-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+        .a-icon.ootb{background:var(--bbg)}
+        .a-icon.custom{background:var(--obg)}
+        .a-info{flex:1}.a-name{font-size:.78rem;font-weight:600}.a-desc{font-size:.62rem;color:var(--g400)}
+        .a-badge{font-size:.55rem;padding:.12rem .4rem;border-radius:3px;font-weight:600}
+        .a-badge.active{background:var(--gbg);color:var(--g)}
+        .a-badge.draft{background:var(--obg);color:var(--o)}
+        .a-remove{opacity:0;font-size:.65rem;color:var(--r);cursor:pointer;padding:.2rem .4rem;border-radius:4px}
+        .action-item:hover .a-remove{opacity:1}
+        .a-remove:hover{background:var(--rbg)}
+
+        /* Add Actions Button */
+        .add-actions-btn{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.75rem;border:2px dashed var(--b);border-radius:var(--rad);font-size:.78rem;font-weight:600;color:var(--b);cursor:pointer;margin-top:.75rem;transition:all .12s}
+        .add-actions-btn:hover{background:var(--bbg);border-style:solid}
+
+        /* Action Picker Modal */
+        .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:199;display:none;align-items:center;justify-content:center}
+        .modal-bg.open{display:flex}
+        .modal{background:var(--w);border-radius:16px;width:580px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);padding:0}
+        .modal-hdr{padding:1.25rem 1.5rem;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between}
+        .modal-hdr h2{font-size:1.05rem;font-weight:700}
+        .modal-close{font-size:1.2rem;color:var(--g400);cursor:pointer;padding:.2rem .4rem;border-radius:4px}
+        .modal-close:hover{background:var(--g100)}
+        .modal-body{padding:1.25rem 1.5rem}
+
+        .industry-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem;padding:.6rem .8rem;background:var(--g100);border-radius:8px}
+        .industry-bar label{font-size:.68rem;font-weight:600;color:var(--g500);white-space:nowrap}
+        .industry-bar select{border:1px solid var(--g200);border-radius:6px;padding:.3rem .6rem;font-size:.72rem;background:var(--w);cursor:pointer}
+
+        .ootb-list{margin-bottom:1rem}
+        .ootb-card{display:flex;align-items:flex-start;gap:.75rem;padding:.85rem;border:1px solid var(--g200);border-radius:10px;margin-bottom:.5rem;cursor:pointer;transition:all .12s}
+        .ootb-card:hover{border-color:var(--b);box-shadow:0 2px 8px rgba(27,150,255,.1)}
+        .ootb-card.selected{border-color:var(--b);background:var(--bbg)}
+        .ootb-card .oc-icon{width:36px;height:36px;background:var(--bbg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+        .ootb-card.selected .oc-icon{background:var(--b);filter:none}
+        .ootb-card .oc-info{flex:1}
+        .ootb-card .oc-name{font-size:.8rem;font-weight:700;margin-bottom:.15rem}
+        .ootb-card .oc-desc{font-size:.65rem;color:var(--g500);line-height:1.4}
+        .ootb-card .oc-queries{display:flex;flex-wrap:wrap;gap:.2rem;margin-top:.3rem}
+        .ootb-card .oc-queries span{font-size:.58rem;padding:.1rem .35rem;background:var(--g100);border-radius:var(--pill);color:var(--g500)}
+        .ootb-card .oc-check{width:20px;height:20px;border:2px solid var(--g200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.6rem;color:var(--w)}
+        .ootb-card.selected .oc-check{background:var(--b);border-color:var(--b)}
+
+        .custom-card{display:flex;align-items:center;gap:.75rem;padding:.75rem;border:1px dashed var(--g300);border-radius:10px;cursor:pointer;transition:all .12s}
+        .custom-card:hover{border-color:var(--o);background:var(--obg)}
+        .custom-card .cc-icon{width:36px;height:36px;background:var(--obg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+        .custom-card .cc-text{font-size:.76rem;font-weight:600;color:var(--g700)}
+        .custom-card .cc-sub{font-size:.62rem;color:var(--g400)}
+
+        .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between}
+        .modal-footer .sel-count{font-size:.7rem;color:var(--g500)}
+
+        /* Inline Eval */
+        .eval-inline{border:1px solid var(--gbr);border-radius:10px;padding:.85rem 1rem;margin-top:.75rem;animation:slideDown .3s ease}
+        @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+        .eval-inline.running{border-color:var(--bbr);background:var(--bbg)}
+        .eval-inline.passed{border-color:var(--gbr);background:var(--gbg)}
+        .eval-inline.warning{border-color:var(--obr);background:var(--obg)}
+        .eval-hdr{display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem}
+        .eval-hdr .eval-icon{font-size:.8rem}
+        .eval-hdr .eval-title{font-size:.72rem;font-weight:700}
+        .eval-hdr .eval-time{margin-left:auto;font-size:.58rem;color:var(--g400)}
+        .eval-rows{margin-top:.3rem}
+        .eval-row{display:flex;align-items:center;justify-content:space-between;padding:.2rem 0;font-size:.66rem}
+        .eval-row .er-q{color:var(--g500);flex:1;margin-right:.5rem}
+        .eval-row .er-result{font-weight:600;white-space:nowrap}
+        .eval-row .er-result.pass{color:var(--g)}
+        .eval-row .er-result.fail{color:var(--r)}
+        .eval-summary{font-size:.68rem;font-weight:600;margin-top:.4rem;padding-top:.4rem;border-top:1px solid rgba(0,0,0,.06)}
+
+        /* Instructions Panel */
+        .instructions-panel{margin-top:1rem}
+        .instr-textarea{width:100%;border:1px solid var(--g200);border-radius:8px;padding:.6rem .8rem;font-size:.72rem;font-family:inherit;line-height:1.5;resize:vertical;min-height:100px;transition:border-color .12s}
+        .instr-textarea:focus{outline:none;border-color:var(--b)}
+        .instr-actions{display:flex;align-items:center;gap:.5rem;margin-top:.5rem}
+        .instr-hint{font-size:.6rem;color:var(--g400);margin-left:auto}
+
+        /* Test Panel (right column) */
+        .test-panel{position:sticky;top:70px}
+        .chat{border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden;display:flex;flex-direction:column;height:320px}
+        .chat-bar{padding:.4rem .75rem;background:var(--g100);font-size:.6rem;color:var(--g500);font-weight:500;display:flex;justify-content:space-between;border-bottom:1px solid var(--g200)}
+        .chat-body{flex:1;overflow-y:auto;padding:.65rem .75rem}
+        .cm{margin-bottom:.5rem;max-width:82%}.cm.u{margin-left:auto}.cm.b{margin-right:auto}
+        .cb{padding:.45rem .65rem;border-radius:12px;font-size:.72rem;line-height:1.4}
+        .u .cb{background:var(--b);color:var(--w);border-bottom-right-radius:3px}
+        .b .cb{background:var(--g100);border-bottom-left-radius:3px}
+        .chat-diag{margin-top:.2rem;font-size:.56rem;color:var(--g400);padding:.2rem .45rem;background:#fffde8;border:1px solid #f0e68c;border-radius:4px;display:inline-block}
+        .chat-in{padding:.5rem .6rem;border-top:1px solid var(--g200);display:flex;gap:.3rem}
+        .chat-in input{flex:1;border:1px solid var(--g200);border-radius:var(--pill);padding:.4rem .75rem;font-size:.72rem}
+        .chat-in input:focus{outline:none;border-color:var(--b)}
+        .chips{padding:.3rem .75rem .4rem;display:flex;flex-wrap:wrap;gap:.25rem}
+        .chip{padding:.2rem .5rem;border:1px solid var(--g200);border-radius:var(--pill);font-size:.6rem;color:var(--g500);cursor:pointer;background:var(--w)}
+        .chip:hover{border-color:var(--b);color:var(--b)}
+
+        /* Eval comparison */
+        .eval-compare{margin-top:.75rem}
+        .eval-compare h4{font-size:.72rem;font-weight:700;margin-bottom:.4rem}
+        .compare-row{display:flex;gap:.4rem;margin-bottom:.3rem;font-size:.64rem}
+        .compare-before,.compare-after{flex:1;padding:.4rem .5rem;border-radius:6px}
+        .compare-before{background:var(--rbg);border:1px solid #f5c6c4}
+        .compare-after{background:var(--gbg);border:1px solid var(--gbr)}
+        .compare-label{font-size:.55rem;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:.15rem;color:var(--g500)}
+
+        /* Buttons */
+        .btn{display:inline-flex;align-items:center;gap:.3rem;padding:.45rem 1rem;border-radius:var(--pill);font-size:.72rem;font-weight:600;cursor:pointer;border:none;transition:all .12s}
+        .btn-b{background:var(--b);color:var(--w)}.btn-b:hover{background:var(--bd)}
+        .btn-o{background:var(--w);color:var(--g700);border:1px solid var(--g200)}.btn-o:hover{background:var(--g100)}
+        .btn-sm{padding:.3rem .6rem;font-size:.64rem}
+        .btn-g{background:var(--g);color:var(--w)}.btn-g:hover{background:#236b3a}
+
+        /* Toast */
+        .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--w);border:1px solid var(--g200);border-radius:var(--rad);box-shadow:0 8px 32px rgba(0,0,0,.12);padding:1rem 1.25rem;max-width:340px;display:none;z-index:300;animation:slideUp .3s ease}
+        .toast.show{display:block}
+        @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .toast-msg{font-size:.74rem;font-weight:600}
+        .toast-sub{font-size:.64rem;color:var(--g500);margin-top:.2rem}
+        .toast-close{position:absolute;top:.5rem;right:.7rem;font-size:.8rem;color:var(--g400);cursor:pointer}
     </style>
 </head>
 <body>
-    <div class="hero">
-        <h1>Action Management Prototype</h1>
-        <p>How the admin experience adapts based on whether the org has existing Service Cloud traffic (warm-start) or is configuring Agentforce for the first time (cold-start).</p>
+
+<div class="hdr">
+    <svg viewBox="0 0 48 36"><path d="M40.5 14.5c-.3-6.5-5.6-11.5-12-11.5-4.5 0-8.5 2.5-10.5 6.2C16.8 8.4 15.2 8 13.5 8 8.8 8 5 11.8 5 16.5c0 .5 0 1 .1 1.5C2.2 19.2 0 22.2 0 25.5 0 30.2 3.8 34 8.5 34h29c5.2 0 9.5-4.3 9.5-9.5 0-4.8-3.6-8.8-8.5-10z" fill="#00A1E0"/></svg>
+    <span class="hdr-title">Help Agent</span>
+    <span class="hdr-sub">Agentforce Setup</span>
+    <div class="hdr-right">
+        <button class="btn btn-o btn-sm">Discard Changes</button>
+        <button class="btn btn-g btn-sm" id="publishBtn" onclick="publish()">Publish</button>
+    </div>
+</div>
+
+<!-- Steps -->
+<div class="page">
+    <div class="steps">
+        <div class="step done"><span class="step-num">Step 1</span>Channel</div>
+        <div class="step done"><span class="step-num">Step 2</span>Topics & Instructions</div>
+        <div class="step active"><span class="step-num">Step 3</span>Actions</div>
+        <div class="step"><span class="step-num">Step 4</span>Test & Eval</div>
+        <div class="step"><span class="step-num">Step 5</span>Publish</div>
     </div>
 
-    <div class="cards">
-        <a class="card warm" href="warm-start.html">
-            <div class="card-icon">&#x1F525;</div>
-            <h2>Warm-Start</h2>
-            <span class="card-tag">Existing Service Cloud Customer</span>
-            <p>Org has 30+ days of case/chat data. Traffic patterns, resolution history, and query baselines exist.</p>
-            <ul>
-                <li>Traffic-driven recommendations</li>
-                <li>Real metrics with regression detection</li>
-                <li>Bulk import test cases from logs</li>
-                <li>Historical baseline comparison</li>
-            </ul>
-        </a>
-        <a class="card cold" href="cold-start.html">
-            <div class="card-icon">&#x2744;&#xFE0F;</div>
-            <h2>Cold-Start</h2>
-            <span class="card-tag">Net New Customer</span>
-            <p>No prior Service Cloud traffic. New to Salesforce or migrating from another platform.</p>
-            <ul>
-                <li>Industry starter packs</li>
-                <li>Guided first publish flow</li>
-                <li>Absolute thresholds (no baseline)</li>
-                <li>Transition nudges as data grows</li>
-            </ul>
-        </a>
-    </div>
+    <div class="main-grid">
+        <!-- Left Column -->
+        <div>
+            <!-- Current Actions -->
+            <div class="panel">
+                <div class="panel-hdr">
+                    <h2>Actions</h2>
+                    <span class="meta" id="actionCount">2 active</span>
+                </div>
+                <div class="panel-body">
+                    <div id="actionList"></div>
+                    <div class="add-actions-btn" onclick="openPicker()">
+                        <span>+</span> Add Actions
+                    </div>
 
-    <div class="diff-table">
-        <h3>Key Differences at a Glance</h3>
-        <table>
-            <thead>
-                <tr><th>Surface</th><th>Warm-Start (Existing)</th><th>Cold-Start (Net New)</th></tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Recommendations</td>
-                    <td class="warm-col">"187 queries/mo hitting fallback — add Order Tracking"</td>
-                    <td class="cold-col">"Most Service orgs start with these 5 actions"</td>
-                </tr>
-                <tr>
-                    <td>Impact Numbers</td>
-                    <td class="warm-col">Real volume from traffic logs</td>
-                    <td class="cold-col">Industry benchmark estimates (labeled)</td>
-                </tr>
-                <tr>
-                    <td>Eval Datasets</td>
-                    <td class="warm-col">Traffic sample + saved test cases + overlap set</td>
-                    <td class="cold-col">Starter pack test cases + overlap set only</td>
-                </tr>
-                <tr>
-                    <td>Regression Delta</td>
-                    <td class="warm-col">Active from first publish (historical baseline)</td>
-                    <td class="cold-col">Activates after second publish (v1 → v2 only)</td>
-                </tr>
-                <tr>
-                    <td>Post-Publish</td>
-                    <td class="warm-col">Regression vs. baseline (24h monitoring)</td>
-                    <td class="cold-col">Absolute threshold monitoring only</td>
-                </tr>
-                <tr>
-                    <td>Test Cases</td>
-                    <td class="warm-col">Bulk import from production query logs</td>
-                    <td class="cold-col">15-25 pre-built industry starter templates</td>
-                </tr>
-                <tr>
-                    <td>LLM Judge</td>
-                    <td class="warm-col">Admin rates 50 real production responses</td>
-                    <td class="cold-col">Admin reviews 50 pre-scored synthetic examples</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+                    <!-- Inline eval appears here after adding -->
+                    <div id="evalContainer"></div>
+                </div>
+            </div>
 
-    <div class="footer">
-        <p>Agentforce Self-Service &middot; Action Management + Eval Framework &middot; <a href="https://docs.google.com/document/d/1axe0Wh4U-rwfifyOmCAmXwzYTOLV8OOEVJRO_SAOUqY/edit">DPC</a></p>
+            <!-- Instructions -->
+            <div class="panel">
+                <div class="panel-hdr">
+                    <h2>Agent Instructions</h2>
+                    <span class="meta">Edit to see eval impact</span>
+                </div>
+                <div class="panel-body">
+                    <textarea class="instr-textarea" id="instructions">You are a helpful support agent for an e-commerce company. Always greet the customer warmly. If you cannot resolve an issue, escalate to a human agent. Never share internal pricing or discount codes unless the customer explicitly asks about an active promotion.</textarea>
+                    <div class="instr-actions">
+                        <button class="btn btn-sm btn-o" onclick="runInstructionEval()">Run Eval with Changes</button>
+                        <button class="btn btn-sm btn-o" onclick="resetInstructions()">Reset</button>
+                        <span class="instr-hint">Edit instructions above, then run eval to see impact</span>
+                    </div>
+                    <div id="instrEvalContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Test Agent -->
+        <div class="test-panel">
+            <div class="panel">
+                <div class="panel-hdr"><h2>Test Agent</h2><span class="meta">Live preview</span></div>
+                <div class="panel-body" style="padding:0">
+                    <div class="chat">
+                        <div class="chat-bar"><span>Draft config</span><span id="chatConfig">2 actions active</span></div>
+                        <div class="chat-body" id="chatBody">
+                            <div class="cm b"><div class="cb">Hi! I'm your Help Agent. How can I assist you today?</div></div>
+                        </div>
+                        <div class="chips" id="chipArea">
+                            <span class="chip" onclick="tryC(this)">Where is my order?</span>
+                            <span class="chip" onclick="tryC(this)">I want a refund</span>
+                            <span class="chip" onclick="tryC(this)">Reset my password</span>
+                        </div>
+                        <div class="chat-in">
+                            <input id="chatIn" placeholder="Type a customer message..." onkeydown="if(event.key==='Enter')send()">
+                            <button class="btn btn-b btn-sm" onclick="send()">&#x2191;</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Eval comparison when instructions change -->
+            <div id="instrCompare"></div>
+        </div>
     </div>
+</div>
+
+<!-- Action Picker Modal -->
+<div class="modal-bg" id="modalBg" onclick="closePicker()">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-hdr">
+            <h2>Add Actions</h2>
+            <span class="modal-close" onclick="closePicker()">&#x2715;</span>
+        </div>
+        <div class="modal-body">
+            <div class="industry-bar">
+                <label>Show actions for:</label>
+                <select id="industrySelect" onchange="updateIndustry()">
+                    <option value="retail">Retail & E-commerce</option>
+                    <option value="financial">Financial Services</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="tech">Technology / SaaS</option>
+                </select>
+            </div>
+            <div id="ootbList"></div>
+            <div class="custom-card" onclick="alert('Opens Flow Builder to create a custom action')">
+                <div class="cc-icon">&#x2699;&#xFE0F;</div>
+                <div>
+                    <div class="cc-text">Build Custom Action</div>
+                    <div class="cc-sub">Use Flow Builder or Apex to create your own</div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <span class="sel-count" id="selCount">0 selected</span>
+            <button class="btn btn-b" id="addSelectedBtn" onclick="addSelected()">Add Selected</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span class="toast-close" onclick="hideToast()">&#x2715;</span><div class="toast-msg" id="toastMsg"></div><div class="toast-sub" id="toastSub"></div></div>
+
+<script>
+// State
+let activeActions = [
+    {id:'knowledge',icon:'&#x1F4DA;',name:'Search Knowledge Base',desc:'Searches articles to answer questions',type:'ootb'},
+    {id:'escalate',icon:'&#x1F91D;',name:'Escalate to Agent',desc:'Transfers to a human when needed',type:'ootb'},
+];
+let selected = new Set();
+
+const industries = {
+    retail: [
+        {id:'order-status',icon:'&#x1F4E6;',name:'Order Status Lookup',desc:'Checks order status, shipping, and delivery tracking in real-time.',queries:['Where is my order?','Track my package','When will it arrive?']},
+        {id:'returns',icon:'&#x21A9;&#xFE0F;',name:'Process Return/Refund',desc:'Initiates returns, checks eligibility, and processes refunds.',queries:['I want to return this','Refund my order','Return policy']},
+        {id:'cancel-order',icon:'&#x1F6AB;',name:'Cancel Order',desc:'Cancels orders that have not yet shipped.',queries:['Cancel my order','I changed my mind','Stop my shipment']},
+        {id:'exchange',icon:'&#x1F504;',name:'Exchange Item',desc:'Swaps items for a different size, color, or variant.',queries:['Wrong size','Exchange this','Need a different color']},
+    ],
+    financial: [
+        {id:'balance',icon:'&#x1F4B0;',name:'Account Balance Inquiry',desc:'Retrieves account balance and recent transactions.',queries:['What\'s my balance?','Recent transactions','Account summary']},
+        {id:'dispute',icon:'&#x26A0;&#xFE0F;',name:'Dispute Transaction',desc:'Opens a dispute for unauthorized or incorrect charges.',queries:['I don\'t recognize this charge','Dispute a transaction','Unauthorized charge']},
+        {id:'transfer',icon:'&#x1F4B8;',name:'Fund Transfer',desc:'Transfers funds between accounts or to external accounts.',queries:['Transfer money','Move funds','Send to another account']},
+        {id:'card-lock',icon:'&#x1F512;',name:'Lock/Unlock Card',desc:'Immediately locks or unlocks a debit or credit card.',queries:['Lock my card','I lost my card','Unlock my card']},
+    ],
+    healthcare: [
+        {id:'appointment',icon:'&#x1F4C5;',name:'Schedule Appointment',desc:'Books, reschedules, or cancels patient appointments.',queries:['Book an appointment','Reschedule my visit','Cancel appointment']},
+        {id:'prescriptions',icon:'&#x1F48A;',name:'Prescription Refill',desc:'Requests refills and checks prescription status.',queries:['Refill my prescription','Medication status','Need more meds']},
+        {id:'test-results',icon:'&#x1F9EA;',name:'View Test Results',desc:'Retrieves lab results and explains normal ranges.',queries:['My lab results','Test results ready?','What does this result mean?']},
+        {id:'insurance',icon:'&#x1F4CB;',name:'Insurance Verification',desc:'Checks coverage and copay for procedures.',queries:['Am I covered?','What\'s my copay?','Insurance coverage']},
+    ],
+    tech: [
+        {id:'reset-pw',icon:'&#x1F511;',name:'Password Reset',desc:'Guides user through secure password reset flow.',queries:['Reset my password','Forgot password','Can\'t log in']},
+        {id:'billing-q',icon:'&#x1F4B3;',name:'Billing & Subscription',desc:'Handles plan changes, invoice questions, and cancellation.',queries:['Change my plan','View my invoice','Cancel subscription']},
+        {id:'bug-report',icon:'&#x1F41B;',name:'Report Issue',desc:'Collects bug details and creates a support ticket.',queries:['Something is broken','Report a bug','App crashed']},
+        {id:'feature-q',icon:'&#x1F4A1;',name:'Feature Guidance',desc:'Explains how to use product features.',queries:['How do I...?','Where is the setting for...','Feature walkthrough']},
+    ],
+};
+
+// Eval test cases per action
+const evalCases = {
+    'order-status': [
+        {q:'Where is my order #12345?', expected:'Order Status Lookup', pass:true},
+        {q:'My package hasn\'t arrived yet', expected:'Order Status Lookup', pass:true},
+        {q:'Track my shipment', expected:'Order Status Lookup', pass:true},
+        {q:'When will order arrive?', expected:'Order Status Lookup', pass:true},
+    ],
+    'returns': [
+        {q:'I want to return my shoes', expected:'Process Return/Refund', pass:true},
+        {q:'How do I get a refund?', expected:'Process Return/Refund', pass:true},
+        {q:'This item is defective, return it', expected:'Process Return/Refund', pass:true},
+        {q:'What\'s your return window?', expected:'Process Return/Refund', pass:false},
+    ],
+    'cancel-order': [
+        {q:'Cancel order #789', expected:'Cancel Order', pass:true},
+        {q:'I changed my mind, don\'t ship it', expected:'Cancel Order', pass:true},
+        {q:'Stop my order', expected:'Cancel Order', pass:true},
+        {q:'Can I still cancel?', expected:'Cancel Order', pass:true},
+    ],
+    'exchange': [
+        {q:'I need a larger size', expected:'Exchange Item', pass:true},
+        {q:'Can I swap for blue?', expected:'Exchange Item', pass:true},
+        {q:'Exchange my shirt', expected:'Exchange Item', pass:true},
+        {q:'Wrong item received', expected:'Exchange Item', pass:false},
+    ],
+    'balance': [
+        {q:'What\'s my checking balance?', expected:'Account Balance Inquiry', pass:true},
+        {q:'Show recent transactions', expected:'Account Balance Inquiry', pass:true},
+        {q:'How much is in my savings?', expected:'Account Balance Inquiry', pass:true},
+        {q:'Account overview', expected:'Account Balance Inquiry', pass:true},
+    ],
+    'dispute': [
+        {q:'I don\'t recognize a $50 charge', expected:'Dispute Transaction', pass:true},
+        {q:'Unauthorized purchase on my card', expected:'Dispute Transaction', pass:true},
+        {q:'Dispute this transaction', expected:'Dispute Transaction', pass:true},
+        {q:'Charged twice', expected:'Dispute Transaction', pass:true},
+    ],
+};
+
+function renderActions() {
+    const list = document.getElementById('actionList');
+    list.innerHTML = activeActions.map(a => `
+        <div class="action-item" id="action-${a.id}">
+            <div class="a-icon ${a.type}">${a.icon}</div>
+            <div class="a-info"><div class="a-name">${a.name}</div><div class="a-desc">${a.desc}</div></div>
+            <span class="a-badge active">Active</span>
+            <span class="a-remove" onclick="removeAction('${a.id}')">Remove</span>
+        </div>`).join('');
+    document.getElementById('actionCount').textContent = activeActions.length + ' active';
+    document.getElementById('chatConfig').textContent = activeActions.length + ' actions active';
+}
+
+function openPicker() {
+    selected.clear();
+    updateIndustry();
+    document.getElementById('modalBg').classList.add('open');
+    updateSelCount();
+}
+
+function closePicker() {
+    document.getElementById('modalBg').classList.remove('open');
+}
+
+function updateIndustry() {
+    const ind = document.getElementById('industrySelect').value;
+    const actions = industries[ind];
+    document.getElementById('ootbList').innerHTML = actions.map(a => {
+        const alreadyAdded = activeActions.find(x => x.id === a.id);
+        const isSelected = selected.has(a.id);
+        return `<div class="ootb-card ${isSelected?'selected':''} ${alreadyAdded?'':'clickable'}" onclick="${alreadyAdded?'':`toggleSelect('${a.id}')`}" style="${alreadyAdded?'opacity:.5;cursor:default':''}">
+            <div class="oc-icon">${a.icon}</div>
+            <div class="oc-info">
+                <div class="oc-name">${a.name} ${alreadyAdded?'<span style="font-size:.55rem;color:var(--g)">(already added)</span>':''}</div>
+                <div class="oc-desc">${a.desc}</div>
+                <div class="oc-queries">${a.queries.map(q=>`<span>"${q}"</span>`).join('')}</div>
+            </div>
+            <div class="oc-check">${isSelected?'&#x2713;':''}</div>
+        </div>`;
+    }).join('');
+}
+
+function toggleSelect(id) {
+    if (selected.has(id)) selected.delete(id); else selected.add(id);
+    updateIndustry();
+    updateSelCount();
+}
+
+function updateSelCount() {
+    document.getElementById('selCount').textContent = selected.size + ' selected';
+    document.getElementById('addSelectedBtn').style.opacity = selected.size ? '1' : '.5';
+}
+
+function addSelected() {
+    if (!selected.size) return;
+    const ind = document.getElementById('industrySelect').value;
+    const actions = industries[ind];
+    const added = [];
+    selected.forEach(id => {
+        const a = actions.find(x => x.id === id);
+        if (a && !activeActions.find(x => x.id === id)) {
+            activeActions.push({id:a.id, icon:a.icon, name:a.name, desc:a.desc, type:'ootb'});
+            added.push(a);
+        }
+    });
+    renderActions();
+    closePicker();
+
+    // Highlight newly added
+    added.forEach(a => {
+        const el = document.getElementById('action-' + a.id);
+        if (el) el.classList.add('highlight');
+    });
+
+    // Run inline eval
+    runInlineEval(added);
+    showToast(added.length + ' action' + (added.length>1?'s':'') + ' added', 'Running eval against test cases...');
+}
+
+function removeAction(id) {
+    activeActions = activeActions.filter(a => a.id !== id);
+    renderActions();
+    document.getElementById('evalContainer').innerHTML = '';
+    showToast('Action removed', 'Run eval to check impact on routing');
+}
+
+function runInlineEval(addedActions) {
+    const container = document.getElementById('evalContainer');
+    container.innerHTML = `<div class="eval-inline running">
+        <div class="eval-hdr"><span class="eval-icon">&#x23F3;</span><span class="eval-title">Running eval...</span><span class="eval-time">evaluating ${addedActions.length} action(s)</span></div>
+        <div class="eval-rows"><div style="font-size:.65rem;color:var(--g500)">Testing routing accuracy against sample queries...</div></div>
+    </div>`;
+
+    setTimeout(() => {
+        let allCases = [];
+        addedActions.forEach(a => {
+            const cases = evalCases[a.id] || [
+                {q:'Sample query 1', expected:a.name, pass:true},
+                {q:'Sample query 2', expected:a.name, pass:true},
+                {q:'Sample query 3', expected:a.name, pass:true},
+                {q:'Edge case query', expected:a.name, pass:Math.random()>.3},
+            ];
+            allCases = allCases.concat(cases.map(c => ({...c, action:a.name})));
+        });
+
+        const passed = allCases.filter(c => c.pass).length;
+        const total = allCases.length;
+        const pct = Math.round(passed/total*100);
+        const status = pct >= 90 ? 'passed' : 'warning';
+
+        container.innerHTML = `<div class="eval-inline ${status}">
+            <div class="eval-hdr">
+                <span class="eval-icon">${status==='passed'?'&#x2705;':'&#x26A0;&#xFE0F;'}</span>
+                <span class="eval-title">${passed}/${total} passed (${pct}%)</span>
+                <span class="eval-time">completed in 1.8s</span>
+            </div>
+            <div class="eval-rows">
+                ${allCases.map(c => `<div class="eval-row"><span class="er-q">"${c.q}"</span><span class="er-result ${c.pass?'pass':'fail'}">${c.pass?'&#x2713; → '+c.expected:'&#x2717; misrouted'}</span></div>`).join('')}
+            </div>
+            <div class="eval-summary" style="color:${status==='passed'?'var(--g)':'var(--o)'}">
+                ${status==='passed'?'All actions routing correctly. Safe to publish.':'Some queries misrouted. Review flagged cases or adjust instructions.'}
+            </div>
+        </div>`;
+    }, 2000);
+}
+
+// Instruction eval
+const originalInstructions = document.getElementById('instructions').value;
+
+function resetInstructions() {
+    document.getElementById('instructions').value = originalInstructions;
+    document.getElementById('instrEvalContainer').innerHTML = '';
+    document.getElementById('instrCompare').innerHTML = '';
+}
+
+function runInstructionEval() {
+    const current = document.getElementById('instructions').value;
+    const changed = current !== originalInstructions;
+
+    const container = document.getElementById('instrEvalContainer');
+    container.innerHTML = `<div class="eval-inline running" style="margin-top:.75rem">
+        <div class="eval-hdr"><span class="eval-icon">&#x23F3;</span><span class="eval-title">Evaluating instruction changes...</span></div>
+    </div>`;
+
+    setTimeout(() => {
+        const hasRemoved = current.length < originalInstructions.length - 20;
+        const cases = [
+            {q:'Give me a discount code', before:'Refused (correct)', after: current.includes('discount')?'Refused (correct)':'Shared code (wrong)', changed: !current.includes('discount')},
+            {q:'Hello, I need help', before:'Warm greeting', after:'Warm greeting', changed:false},
+            {q:'This is too complicated', before:'Escalated to human', after: current.includes('escalat')?'Escalated to human':'Tried to resolve (risky)', changed: !current.includes('escalat')},
+            {q:'What\'s the internal price?', before:'Refused (correct)', after: current.includes('internal')?'Refused (correct)':'May share info (risky)', changed: !current.includes('internal')},
+        ];
+
+        const issues = cases.filter(c => c.changed);
+        const status = issues.length === 0 ? 'passed' : 'warning';
+
+        container.innerHTML = `<div class="eval-inline ${status}" style="margin-top:.75rem">
+            <div class="eval-hdr">
+                <span class="eval-icon">${status==='passed'?'&#x2705;':'&#x26A0;&#xFE0F;'}</span>
+                <span class="eval-title">${status==='passed'?'No behavior changes detected':''+issues.length+' behavior change(s) detected'}</span>
+                <span class="eval-time">4 test scenarios</span>
+            </div>
+            <div class="eval-rows">
+                ${cases.map(c => `<div class="eval-row"><span class="er-q">"${c.q}"</span><span class="er-result ${c.changed?'fail':'pass'}">${c.changed?'&#x26A0; Changed':'&#x2713; Same'}</span></div>`).join('')}
+            </div>
+            ${issues.length?`<div class="eval-summary" style="color:var(--o)">Removing instructions changed agent behavior. Review changes in the Test Agent panel.</div>`:`<div class="eval-summary" style="color:var(--g)">Instructions change has no impact on evaluated scenarios.</div>`}
+        </div>`;
+
+        // Show before/after comparison
+        if (issues.length) {
+            document.getElementById('instrCompare').innerHTML = `
+                <div class="panel" style="border-color:var(--obr)">
+                    <div class="panel-hdr" style="background:var(--obg)"><h2 style="font-size:.78rem">Behavior Changes</h2></div>
+                    <div class="panel-body">
+                        ${issues.map(c => `
+                            <div style="margin-bottom:.6rem">
+                                <div style="font-size:.66rem;font-weight:600;margin-bottom:.3rem">"${c.q}"</div>
+                                <div class="compare-row">
+                                    <div class="compare-before"><div class="compare-label">Before</div>${c.before}</div>
+                                    <div class="compare-after"><div class="compare-label">After</div>${c.after}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        } else {
+            document.getElementById('instrCompare').innerHTML = '';
+        }
+    }, 1500);
+}
+
+// Chat
+function send() {
+    const inp = document.getElementById('chatIn');
+    if (!inp.value.trim()) return;
+    const msg = inp.value; inp.value = '';
+    const bd = document.getElementById('chatBody');
+    bd.innerHTML += `<div class="cm u"><div class="cb">${msg}</div></div>`;
+
+    setTimeout(() => {
+        let action = 'Search Knowledge Base', resp = 'Let me look that up for you...';
+        const l = msg.toLowerCase();
+        if (l.match(/order|track|ship|package/) && activeActions.find(a=>a.id==='order-status')) {action='Order Status Lookup'; resp="I can help with that. What's your order number?";}
+        else if (l.match(/return|refund/) && activeActions.find(a=>a.id==='returns')) {action='Process Return/Refund'; resp="I'll help you with that return. What's the order number?";}
+        else if (l.match(/cancel/) && activeActions.find(a=>a.id==='cancel-order')) {action='Cancel Order'; resp="I can cancel that. What's the order number?";}
+        else if (l.match(/exchange|size|swap|color/) && activeActions.find(a=>a.id==='exchange')) {action='Exchange Item'; resp="What would you like to exchange it for?";}
+        else if (l.match(/password|login|reset/) && activeActions.find(a=>a.id==='reset-pw')) {action='Password Reset'; resp="I'll send you a reset link. What email is on the account?";}
+        else if (l.match(/balance|account/) && activeActions.find(a=>a.id==='balance')) {action='Account Balance Inquiry'; resp="Let me pull up your account.";}
+        else if (l.match(/escalat|human|agent/)) {action='Escalate to Agent'; resp="I'll connect you with a human agent now.";}
+
+        bd.innerHTML += `<div class="cm b"><div class="cb">${resp}</div><div class="chat-diag">&#x2192; ${action}</div></div>`;
+        bd.scrollTop = bd.scrollHeight;
+    }, 500);
+}
+
+function tryC(el) { document.getElementById('chatIn').value = el.textContent; send(); }
+
+function publish() { showToast('Agent published', 'All actions are now live. Monitoring enabled.'); }
+
+function showToast(msg, sub) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    document.getElementById('toastSub').textContent = sub || '';
+    t.classList.add('show');
+    setTimeout(hideToast, 4000);
+}
+function hideToast() { document.getElementById('toast').classList.remove('show'); }
+
+renderActions();
+</script>
 </body>
 </html>
