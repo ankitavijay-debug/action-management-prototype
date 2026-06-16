@@ -121,6 +121,42 @@
         .custom-action{border:1px dashed var(--sf-grey-3);border-radius:var(--sf-radius-md);padding:.7rem 1.1rem;display:flex;align-items:center;gap:.75rem;cursor:pointer;margin-top:.4rem;transition:all .12s}
         .custom-action:hover{border-color:var(--sf-orange);background:var(--sf-orange-light)}
 
+        /* Action Detail Expansion */
+        .action-detail{border:1px solid var(--sf-blue-border);border-radius:var(--sf-radius-md);background:var(--sf-white);margin-bottom:.6rem;overflow:hidden;animation:slideDown .25s ease}
+        .action-detail-header{padding:.75rem 1rem;background:var(--sf-blue-light);display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--sf-blue-border)}
+        .action-detail-header .adh-icon{width:32px;height:32px;border-radius:50%;background:var(--sf-blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem}
+        .action-detail-header .adh-name{font-size:.85rem;font-weight:700;flex:1}
+        .action-detail-header .adh-close{font-size:.75rem;color:var(--sf-grey-4);cursor:pointer;padding:.2rem .4rem;border-radius:var(--sf-radius)}
+        .action-detail-header .adh-close:hover{background:rgba(0,0,0,.05)}
+        .action-detail-body{padding:1rem}
+        .action-detail-section{margin-bottom:1rem}
+        .action-detail-section:last-child{margin-bottom:0}
+        .ads-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--sf-grey-4);margin-bottom:.35rem;display:flex;align-items:center;gap:.4rem}
+        .ads-label .edit-icon{cursor:pointer;color:var(--sf-blue);font-size:.7rem;opacity:.7;transition:opacity .1s}
+        .ads-label .edit-icon:hover{opacity:1}
+        .action-what{font-size:.76rem;color:var(--sf-grey-5);line-height:1.5}
+        .action-what ul{margin-top:.3rem;padding-left:1.2rem;color:var(--sf-grey-4)}
+        .action-what li{font-size:.72rem;margin-bottom:.15rem}
+        .instr-box{border:1px solid var(--sf-grey-2);border-radius:var(--sf-radius-md);padding:.6rem .8rem;font-size:.74rem;font-family:inherit;line-height:1.5;min-height:60px;position:relative;background:var(--sf-grey-1);transition:all .15s}
+        .instr-box.editing{background:var(--sf-white);border-color:var(--sf-blue);box-shadow:0 0 0 1px var(--sf-blue)}
+        .instr-box textarea{width:100%;border:none;background:transparent;font-size:.74rem;font-family:inherit;line-height:1.5;resize:vertical;min-height:55px;outline:none}
+        .instr-actions{display:flex;align-items:center;gap:.4rem;margin-top:.4rem}
+        .instr-modified-badge{display:inline-flex;align-items:center;gap:.25rem;font-size:.62rem;color:var(--sf-orange);font-weight:600;padding:.15rem .4rem;background:var(--sf-orange-light);border-radius:var(--sf-radius)}
+        .run-eval-nudge{display:flex;align-items:center;gap:.4rem;margin-top:.5rem;padding:.5rem .75rem;background:var(--sf-blue-light);border:1px solid var(--sf-blue-border);border-radius:var(--sf-radius-md);font-size:.72rem;color:var(--sf-blue);cursor:pointer;transition:all .12s}
+        .run-eval-nudge:hover{background:#d4eaff}
+        .run-eval-nudge i{font-size:.8rem}
+
+        /* Pre-saved Eval Criteria */
+        .eval-criteria{border:1px solid var(--sf-grey-2);border-radius:var(--sf-radius-md);padding:.6rem .85rem;margin-top:.6rem;background:var(--sf-white)}
+        .eval-criteria-title{font-size:.68rem;font-weight:700;color:var(--sf-grey-5);margin-bottom:.4rem;display:flex;align-items:center;gap:.3rem}
+        .criteria-row{display:flex;align-items:center;justify-content:space-between;padding:.2rem 0;font-size:.7rem;border-bottom:1px solid var(--sf-grey-1)}
+        .criteria-row:last-child{border-bottom:none}
+        .criteria-row .cr-name{color:var(--sf-grey-4);display:flex;align-items:center;gap:.3rem}
+        .criteria-row .cr-threshold{font-weight:600;color:var(--sf-grey-5)}
+        .criteria-row .cr-status{font-size:.6rem;font-weight:600;padding:.1rem .3rem;border-radius:var(--sf-radius)}
+        .criteria-row .cr-status.pass{background:var(--sf-green-light);color:var(--sf-green)}
+        .criteria-row .cr-status.na{background:var(--sf-grey-1);color:var(--sf-grey-4)}
+
         /* Eval + Test Grid */
         .eval-test-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.25rem}
         @media(max-width:900px){.eval-test-grid{grid-template-columns:1fr}}
@@ -342,6 +378,21 @@ const evalCases = {
     'billing-q':[{q:'Change plan',a:'Billing',p:true},{q:'View invoice',a:'Billing',p:true},{q:'Cancel sub',a:'Billing',p:true},{q:'Upgrade',a:'Billing',p:true}],
 };
 
+// Action detail data - what each action does + default instructions
+const actionDetails = {
+    'order-status': { what:'Looks up order by number or email, returns current status, carrier, tracking link, and estimated delivery.', steps:['Customer provides order number or email','System queries Order object + Shipment records','Returns status, carrier, tracking URL, ETA','If delayed, offers escalation or proactive notification'], instr:'When a customer asks about their order, always ask for order number first. If they provide an email instead, look up their most recent order. Always include the tracking link in your response. If the order is delayed more than 2 days past ETA, proactively offer to escalate.' },
+    'returns': { what:'Checks return eligibility based on purchase date and item category, initiates return label generation, and processes refund.', steps:['Verify order number and item','Check return window (30 days default)','Generate prepaid return label','Process refund to original payment method'], instr:'Always verify the order number before processing. Check that the item is within the return window (30 days from delivery). If outside window, explain policy but offer store credit as alternative. Never process returns for final-sale items.' },
+    'cancel-order': { what:'Cancels orders that are still in "Processing" or "Pending" status before shipment.', steps:['Look up order by number','Check if status is Pre-Shipment','Cancel and confirm to customer','If already shipped, redirect to Returns'], instr:'Only cancel orders in "Processing" or "Pending" status. If the order has already shipped, explain that cancellation is not possible and suggest they initiate a return instead. Always confirm the cancellation with the customer before processing.' },
+    'exchange': { what:'Swaps a purchased item for a different variant (size, color) of the same product.', steps:['Verify original order and item','Check new variant availability','Create exchange order','Generate return label for original'], instr:'Verify the original purchase first. Check inventory for the requested variant before confirming. If the requested variant is out of stock, suggest similar alternatives. The exchange must be for the same product — different products require a return + new purchase.' },
+    'balance': { what:'Retrieves checking/savings account balance and last 5 transactions.', steps:['Verify customer identity (2FA)','Query account balance','Return balance + recent transactions','Flag any pending transactions'], instr:'Always verify identity before showing balance. Use 2-factor authentication. Show pending transactions separately from posted. If balance is below $100, do not proactively suggest products — only answer what was asked.' },
+    'dispute': { what:'Opens a formal dispute for an unauthorized or incorrect charge.', steps:['Verify customer identity','Identify the transaction in question','Collect dispute reason','Submit dispute and provide reference number'], instr:'Always verify identity first. Collect the exact transaction (date, amount, merchant). Ask for the reason (unauthorized, duplicate, wrong amount, service not received). Provide dispute reference number and explain the 10-day investigation timeline.' },
+    'reset-pw': { what:'Sends a secure password reset link after verifying account ownership.', steps:['Verify identity via email or phone','Send reset link to verified contact','Confirm receipt','Offer additional security (enable 2FA)'], instr:'Verify identity using the email or phone on file — never accept a new email for reset. The reset link expires in 15 minutes. If 3+ failed attempts detected, lock account and require support call. Suggest enabling 2FA after successful reset.' },
+    'billing-q': { what:'Handles plan changes, invoice lookups, payment updates, and subscription cancellation.', steps:['Identify billing inquiry type','Look up account/subscription','Process change or provide info','Confirm changes and send receipt'], instr:'For cancellations, always explain what they will lose and offer a downgrade alternative first. Never apply credits without manager approval for amounts over $50. Prorate plan changes effective immediately unless customer requests end-of-cycle.' },
+};
+
+let instrModified = {};
+let expandedAction = null;
+
 let currentIndustry='retail';
 let selected=new Set();
 
@@ -372,16 +423,93 @@ function selectIndustry(el,ind){
 
 function renderActions(){
     const list=industries[currentIndustry];
-    document.getElementById('actionCards').innerHTML=list.map(a=>`
-        <div class="action-card ${selected.has(a.id)?'selected':''}" onclick="toggleAction('${a.id}')">
+    document.getElementById('actionCards').innerHTML=list.map(a=>{
+        const isSelected = selected.has(a.id);
+        const isExpanded = expandedAction === a.id;
+        let html = `<div class="action-card ${isSelected?'selected':''}" onclick="toggleAction('${a.id}')">
             <div class="ac-icon ${a.color}"><i class="fas ${a.icon}"></i></div>
             <div class="ac-info"><div class="ac-name">${a.name}</div><div class="ac-desc">${a.desc}</div><div class="ac-queries">${a.queries.map(q=>`<span>${q}</span>`).join('')}</div></div>
             ${a.badge?`<span class="ac-badge">${a.badge}</span>`:''}
-        </div>`).join('');
+        </div>`;
+        if(isExpanded && isSelected) html += renderActionDetail(a.id, a);
+        return html;
+    }).join('');
+}
+
+function renderActionDetail(id, action){
+    const detail = actionDetails[id] || {what:'Performs the action as described.',steps:['Receives request','Processes','Returns result'],instr:'Follow standard procedures.'};
+    const currentInstr = instrModified[id] || detail.instr;
+    const isModified = instrModified[id] && instrModified[id] !== detail.instr;
+    return `<div class="action-detail" onclick="event.stopPropagation()">
+        <div class="action-detail-header">
+            <div class="adh-icon"><i class="fas ${action.icon}"></i></div>
+            <div class="adh-name">${action.name}</div>
+            <span class="adh-close" onclick="collapseAction(event)"><i class="fas fa-chevron-up"></i></span>
+        </div>
+        <div class="action-detail-body">
+            <div class="action-detail-section">
+                <div class="ads-label"><i class="fas fa-info-circle"></i> What this action does</div>
+                <div class="action-what">
+                    ${detail.what}
+                    <ul>${detail.steps.map(s=>`<li>${s}</li>`).join('')}</ul>
+                </div>
+            </div>
+            <div class="action-detail-section">
+                <div class="ads-label"><i class="fas fa-pen-to-square"></i> Instructions <span class="edit-icon" onclick="enableEdit('${id}')" title="Edit instructions"><i class="fas fa-edit"></i></span></div>
+                <div class="instr-box ${isModified?'editing':''}" id="instrBox-${id}">
+                    <textarea id="instr-${id}" oninput="onInstrChange('${id}')" ${isModified?'':'readonly'} onclick="enableEdit('${id}')">${currentInstr}</textarea>
+                </div>
+                ${isModified?`<div class="instr-actions"><span class="instr-modified-badge"><i class="fas fa-pen"></i> Modified</span><button class="sf-btn" style="padding:.2rem .5rem;font-size:.65rem" onclick="resetInstr('${id}')"><i class="fas fa-undo"></i> Reset</button></div>
+                <div class="run-eval-nudge" onclick="runEval()"><i class="fas fa-play-circle"></i> Instructions changed — Run eval to check impact</div>`:''}
+            </div>
+            <div class="action-detail-section">
+                <div class="ads-label"><i class="fas fa-list-check"></i> Eval Criteria (pre-saved)</div>
+                <div class="eval-criteria">
+                    <div class="eval-criteria-title"><i class="fas fa-shield-halved" style="color:var(--sf-green);font-size:.7rem"></i> Evaluation thresholds for this action</div>
+                    <div class="criteria-row"><span class="cr-name"><i class="fas fa-route" style="font-size:.55rem"></i> Routing Accuracy</span><span class="cr-threshold">≥ 95%</span><span class="cr-status pass">Pass</span></div>
+                    <div class="criteria-row"><span class="cr-name"><i class="fas fa-check-double" style="font-size:.55rem"></i> Resolution Rate</span><span class="cr-threshold">≥ 80%</span><span class="cr-status na">N/A</span></div>
+                    <div class="criteria-row"><span class="cr-name"><i class="fas fa-star" style="font-size:.55rem"></i> Response Quality</span><span class="cr-threshold">≥ 4.0/5</span><span class="cr-status na">N/A</span></div>
+                    <div class="criteria-row"><span class="cr-name"><i class="fas fa-puzzle-piece" style="font-size:.55rem"></i> Input Extraction</span><span class="cr-threshold">≥ 90%</span><span class="cr-status pass">Pass</span></div>
+                    <div class="criteria-row"><span class="cr-name"><i class="fas fa-clock" style="font-size:.55rem"></i> Response Latency</span><span class="cr-threshold">< 3s (p95)</span><span class="cr-status pass">Pass</span></div>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function enableEdit(id){
+    const ta = document.getElementById('instr-'+id);
+    if(ta){ta.removeAttribute('readonly');ta.focus();}
+    const box = document.getElementById('instrBox-'+id);
+    if(box) box.classList.add('editing');
+}
+
+function onInstrChange(id){
+    const ta = document.getElementById('instr-'+id);
+    const detail = actionDetails[id];
+    instrModified[id] = ta.value;
+    renderActions();
+}
+
+function resetInstr(id){
+    delete instrModified[id];
+    renderActions();
+}
+
+function collapseAction(e){
+    e.stopPropagation();
+    expandedAction = null;
+    renderActions();
 }
 
 function toggleAction(id){
-    if(selected.has(id))selected.delete(id);else selected.add(id);
+    if(selected.has(id)){
+        if(expandedAction===id){selected.delete(id);expandedAction=null;}
+        else{expandedAction=id;}
+    } else {
+        selected.add(id);
+        expandedAction=id;
+    }
     renderActions();
     document.getElementById('unsavedText').style.display=selected.size?'inline':'none';
     if(selected.size>0){runEval();}
